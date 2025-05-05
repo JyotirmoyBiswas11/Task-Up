@@ -1,0 +1,35 @@
+name: "Hosting (CI/CD)"
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+  workflow_dispatch:
+
+jobs:
+  live_preview:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref_name == 'main') }}
+    steps:
+      - name: "Checkout to the branch"
+        uses: actions/checkout@v3
+        with:
+          ref: "main"
+      - name: "Node.js setup"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: "Install Dependencies (Clean)"
+        run: npm ci
+      - name: "Build the project"
+        run: npm run build
+      - name: Deploy to firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          channelID: live
+          target: project-management-pravaah
+          projectID: pravaah-consulting-inc
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
